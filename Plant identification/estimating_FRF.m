@@ -2,6 +2,7 @@
 clear all
 clc; clf;
 addpath('Measurements')
+addpath('Model')
 %% Load data
 Fs = 4000;
 open_loop = load('Measurements\measurement_open_loop_14_of_march_1.mat').measurements_open_loop;
@@ -16,8 +17,8 @@ e_c = closed_loop(:,3);
 %% estimate open loop for one frame
 
 frame_length_open = 16000;
-[H_hat, f_hat_open] = tfestimate(u_o, y_o, hann(frame_length_open),frame_length_open/2,frame_length_open, Fs);
-dataBode(H_hat, f_hat_open)
+[H_hat_open, f_hat_open] = tfestimate(u_o, y_o, hann(frame_length_open),frame_length_open/2,frame_length_open, Fs);
+dataBode(H_hat_open, f_hat_open)
 
 %% estimate open loop for many frame lengths
 
@@ -40,17 +41,114 @@ legend(num2str(frame_length_options'))
 % basically identical, but the noise at high frequencies has barely smaller
 % variation for 16k.
 % Coherence for 48k is suspiciously close to 1 for most frequencies. 
+%% Sensitivity
+frame_length_closed = 16000;
+[S_hat, f_hat_closed] = tfestimate(d_c, u_c, hann(frame_length_closed),frame_length_closed/2,frame_length_closed, Fs);
 
+dataBode(S_hat, f_hat_closed)
+%% Sizes for many sensitivities
+frame_length_options = [32000, 16000, 8000]; % [1000, 4000, 16000, 64000, 128000]
+for i = 1:length(frame_length_options)
+    frame_i = frame_length_options(i);
+    [S_i, f_i] = tfestimate(d_c, u_c, hann(frame_i),frame_i/2,frame_i, Fs);
+    semilogx(f_i,db(S_i));
+%     [C_i, f_i] = mscohere(d_c, u_c, hann(frame_i),frame_i/2,frame_i, Fs);
+%     semilogx(f_i,C_i);
+    hold on
+end
+hold off
+legend(num2str(frame_length_options'))
 
+% 64k gives an estimate of S that is too noisy. 32 is noisier than 16.
+% 8k is smoother than 16, but it is worse at the frequencies around 1Hz.
+% There seems to be a peak in the sensitivity at around 1Hz, and 16 is good
+% at handling it. 32 handles the peak well, but the inbetween region is
+% suspiciously good
+%% Process sensitivity
+frame_length_closed = 16000;
+[PS_hat_minus, f_hat_closed] = tfestimate(d_c, e_c, hann(frame_length_closed),frame_length_closed/2,frame_length_closed, Fs);
+dataBode(PS_hat_minus, f_hat_closed)
+
+%% Sizes for many process sensitivities
+frame_length_options = [16000, 4000]; % [1000, 4000, 16000, 64000, 128000]
+for i = 1:length(frame_length_options)
+    frame_i = frame_length_options(i);
+    [PS_i, f_i] = tfestimate(d_c, e_c, hann(frame_i),frame_i/2,frame_i, Fs);
+    semilogx(f_i,db(PS_i));
+%     [C_i, f_i] = mscohere(d_c, e_c, hann(frame_i),frame_i/2,frame_i, Fs);
+%     semilogx(f_i,C_i);
+    hold on
+end
+hold off
+legend(num2str(frame_length_options'))
+
+% 32k is noisy.
+% 4k we start to miss peaks.
+
+%% Controller and 2 point
+Controller = load('id_controller.mat');
+Controller_tf = Controller.shapeit_data.C_tf;
+C_evaluated = squeeze(freqresp(Controller_tf, f_hat_closed, 'Hz'));
+H_2_point = [1./S_hat - 1] ./ C_evaluated;
+%% 3 point
+H_3_point = - PS_hat_minus ./ S_hat;
+%% Comparison of tf
+figure
+subplot(2,1,1)
+semilogx(f_hat_open, db(H_hat_open));
+hold on
+semilogx(f_hat_closed, db(H_2_point));
+hold on
+semilogx(f_hat_closed, db(H_3_point));
+hold off
+legend('Open','2 point', '3 point')
+xlabel('f (Hz)')
+ylabel("|\cdot| (db)")
+title('tf estimates')
+subplot(2,1,2)
+semilogx(f_hat_open, angle(H_hat_open));
+hold on
+semilogx(f_hat_closed, angle(H_2_point));
+hold on
+semilogx(f_hat_closed, angle(H_3_point));
+hold off
+legend('Open','2 point', '3 point')
+xlabel('f (Hz)')
+ylabel("\angle (db)")
+
+%% Comparison of coherence
+
+C_yu = mscohere(u_o, y_o, hann(frame_length_open),frame_length_open/2,frame_length_open,Fs); % For H
+C_du = mscohere(d_c, u_c, hann(frame_length_closed),frame_length_closed/2,frame_length_closed,Fs); % For S
+C_de = mscohere(d_c, e_c, hann(frame_length_closed),frame_length_closed/2,frame_length_closed,Fs); % For S
+
+figure
+semilogx(f_hat_open, C_yu);
+hold on
+semilogx(f_hat_closed, C_du);
+hold on
+semilogx(f_hat_closed, C_de);
+hold off
+legend('Process','Sensitivity', 'Process Sensitivity')
+xlabel('f (Hz)')
+ylabel("Coherence")
+title('Coherence')
+%% Conclusions
+% They all have basically the same results for the tf, but the open loop
+% one seems better for lower frequencies because it is closer to a straight
+% line.
+% Also it has better coherence at low frequencies. Both closed loop
+% estimates use sensitivity which has lower coherence for low f. While PS
+% has worse coherence for medium and high frequencies.
 %% DataBode
 function dataBode(H,f)
     figure;
     subplot(2,1,1);
     semilogx(f,db(H))
-    ylabel('|H| (db)')
+    ylabel("|H| (db)")
     subplot(2,1,2);
     semilogx(f,angle(H)/pi*180)
-    ylabel('\angle H (\degree)')
+    ylabel("\angle H (\circ)")
     xlabel('f (Hz)')
 end
 
