@@ -4,7 +4,7 @@
  * Code generation for Simulink model "Model_feedforward".
  *
  * Simulink Coder version                : 9.8 (R2022b) 13-May-2022
- * C source code generated on : Mon Mar 17 15:59:14 2025
+ * C source code generated on : Mon Mar 17 16:18:40 2025
  *
  * Note that the generated code is not dependent on this header file.
  * The file is used in cojuction with the automatic build procedure.

@@ -9,7 +9,7 @@
  *
  * Model version              : 9.12
  * Simulink Coder version : 9.8 (R2022b) 13-May-2022
- * C source code generated on : Mon Mar 17 15:59:14 2025
+ * C source code generated on : Mon Mar 17 16:18:40 2025
  *
  * Target selection: ert.tlc
  * Note: GRT includes extra infrastructure and instrumentation for prototyping
@@ -30,8 +30,8 @@ P_Model_feedforward_T Model_feedforward_P = {
   /* Variable: ref_part
    * Referenced by: '<S6>/S-Function'
    */
-  { 0.0, 800.0, 0.0, 2.0, 10.0, -1.0, 800.0, 0.0, 0.0, 200.0, 200.0, 0.0, 2.01,
-    2.01, 0.0, 10000.0, 10000.0, 0.0 },
+  { 0.0, 125.0, 0.0, 0.0, 5.8928, -1.0, 125.0, 0.0, 0.0, 22.0, 22.0, 0.0, 0.211,
+    0.211, 0.0, 10000.0, 10000.0, 0.0 },
 
   /* Mask Parameter: Refpower_stat
    * Referenced by: '<S5>/Start setpoint'
@@ -41,7 +41,7 @@ P_Model_feedforward_T Model_feedforward_P = {
   /* Mask Parameter: MeasurementBlock_N_samples
    * Referenced by: '<S4>/SPERTE_measurement_samples'
    */
-  240000U,
+  120000U,
 
   /* Mask Parameter: MeasurementBlock_trigger_comman
    * Referenced by: '<S4>/SPERTE_measurement_trigger_command'
