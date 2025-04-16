@@ -37,15 +37,10 @@ title('Error comparison for different controllers')
 %% Frequency analysis
 error_for_frequency_analysis = get_relevant_error(measure_control_FF_yesFF, 25377+845, 48104);
 plot(error_for_frequency_analysis)
-%%
-pwelch(error_for_frequency_analysis,hann(8000),4000,8000,4000)
-%%
-[psd, freqs]=pwelch(error_for_frequency_analysis,hann(8000),4000,8000,4000);
+[psd, freqs]=pwelch(error_for_frequency_analysis,hann(8000),4000,8000,4000)
 
-semilogx(freqs, db(psd))
-xlabel('f (Hz)')
-ylabel('Power density (db)')
-title('Power spectal density of error for K_{ff} with feedforward')
+plot(freqs, psd)
+
 %% Old version
 %% c1, no FF
 error = measurements_reference(:,1);
