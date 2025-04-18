@@ -1,6 +1,6 @@
 %% Pre
 clear all
-clc; close all;
+clc; clf;
 addpath('Measurements')
 addpath('Model')
 %% Load data
@@ -22,35 +22,17 @@ dataBode(H_hat_open, f_hat_open)
 
 %% estimate open loop for many frame lengths
 
-frame_length_options = [4000, 8000, 16000, 32000, 64000]; % [1000, 4000, 16000, 64000, 128000]
-systems = cell(length(frame_length_options),1);
-for i = 1:length(frame_length_options)
-    frame_i = frame_length_options(i);
-%     [H_i, f_i] = tfestimate(u_o, y_o, hann(frame_i),frame_i/2,frame_i, Fs);
-%     sys_i = frd(H_i, f_i);
-%     systems{i} = sys_i;
-    [C_uy, f_i] = mscohere(u_o, y_o, hann(frame_i),frame_i/2,frame_i, Fs);
-    semilogx(f_i,C_uy);
-    hold on
-end
-hold off
-title('Coherence plot')
-ylabel('Coherence')
-xlabel('f (Hz)')
-% bodemag(systems{1}, systems{2}, systems{3})
-legend(num2str(frame_length_options'))
-%%
-
-frame_length_options = flip([4000, 16000, 64000]); % [1000, 4000, 16000, 64000, 128000]
-systems = cell(length(frame_length_options),1);
+frame_length_options = [32000, 16000, 4000]; % [1000, 4000, 16000, 64000, 128000]
+systems = [frd(1,1) frd(1,1) ss(1)];
 for i = 1:length(frame_length_options)
     frame_i = frame_length_options(i);
     [H_i, f_i] = tfestimate(u_o, y_o, hann(frame_i),frame_i/2,frame_i, Fs);
-    sys_i = frd(H_i, f_i,'FrequencyUnit','Hz');
-    systems{i} = sys_i;
+    sys_i = frd(H_i, f_i);
+    systems(i) = sys_i;
+%     [C_uy, f_i] = mscohere(u_o, y_o, hann(frame_i),frame_i/2,frame_i, Fs);
+%     semilogx(f_i,C_uy);
 end
-title('Estimated open loop transfer function for different window sizes')
-bodemag(systems{1}, systems{2}, systems{3}) % , systems{4}, systems{5}
+bode(systems(1), systems(2), systems(3))
 legend(num2str(frame_length_options'))
 
 % Chosing frame length
@@ -107,19 +89,11 @@ legend(num2str(frame_length_options'))
 %% Controller and 2 point
 Controller = load('id_controller.mat');
 Controller_tf = Controller.shapeit_data.C_tf;
-Controller_tf_z = Controller.shapeit_data.C_tf_z;
 C_evaluated = squeeze(freqresp(Controller_tf, f_hat_closed, 'Hz'));
-C_evaluated_z = squeeze(freqresp(Controller_tf_z, f_hat_closed, 'Hz'));
 H_2_point = [1./S_hat - 1] ./ C_evaluated;
-H_2_point_z = [1./S_hat - 1] ./ C_evaluated_z;
-semilogx(f_hat_closed, db(H_2_point))
-hold on
-semilogx(f_hat_closed, db(H_2_point_z))
-hold off
 %% 3 point
 H_3_point = - PS_hat_minus ./ S_hat;
 %% Comparison of tf
-
 figure
 subplot(2,1,1)
 semilogx(f_hat_open, db(H_hat_open));
@@ -129,20 +103,19 @@ hold on
 semilogx(f_hat_closed, db(H_3_point));
 hold off
 legend('Open','2 point', '3 point')
-% xlabel('f (Hz)')
-ylabel("Magnitude (db)")
+xlabel('f (Hz)')
+ylabel("|\cdot| (db)")
 title('tf estimates')
 subplot(2,1,2)
-semilogx(f_hat_open, angle(H_hat_open)*180/pi);
+semilogx(f_hat_open, angle(H_hat_open));
 hold on
-semilogx(f_hat_closed, angle(H_2_point)*180/pi);
+semilogx(f_hat_closed, angle(H_2_point));
 hold on
-semilogx(f_hat_closed, angle(H_3_point)*180/pi);
+semilogx(f_hat_closed, angle(H_3_point));
 hold off
-yticks([-180,-90,0,90,180])
 legend('Open','2 point', '3 point')
 xlabel('f (Hz)')
-ylabel("Phase (db)")
+ylabel("\angle (db)")
 
 %% Comparison of coherence
 
